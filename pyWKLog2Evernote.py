@@ -14,9 +14,12 @@ import pyodbc
 
 #database define
 #DBfile = 'C:\pyWKLog2Evernote\msudbAS.mdb'
-DBfile = 'W:\MSUDBASE\WKLog3a\msudbAS.mdb'
+#DBfile = 'W:\MSUDBASE\WKLog3a\msudbAS.mdb'
+DBfile = 'DSN=WKLOG'
 
-conn = pyodbc.connect('DRIVER={Microsoft Access Driver (*.mdb)};DBQ='+DBfile)
+#conn = pyodbc.connect('DRIVER={Microsoft Access Driver (*.mdb)};DBQ='+DBfile)
+conn = pyodbc.connect(DBfile)
+
 cursor = conn.cursor()
 print "Database: " + DBfile + " connected."
 
@@ -32,7 +35,11 @@ svrListenPort = 5000
 #
 # add a new note into the Evernote Default Notebook
 def addNewNote(row):
+    # watchkeeper token
     auth_token = "S=s76:U=84f6ef:E=14d7e735e85:C=14626c23289:P=1cd:A=en-devtoken:V=2:H=0616ed9537e7d30bd8bdfe27749c43aa"
+
+    # tongcc8 token
+    # auth_token = "S=s2:U=151bd:E=14d7f6cc0c6:C=14627bb94cd:P=1cd:A=en-devtoken:V=2:H=605e2dd576a2610d0888587b051389af"
 
     if auth_token == "your developer token":
         print "Please fill in your developer token"
@@ -177,16 +184,22 @@ def addNewNote(row):
         SubSys = 'NIL'
     else:
         SubSys = row.SubSys
-        
+
+    # check special char & and replace    
     if row.Symptoms is None:
         Symptoms = 'NIL'
     else:
         Symptoms = row.Symptoms
+        Symptoms = Symptoms.replace('&', 'and')
+        print "string & at Symptoms replaced: " + Symptoms
+    
         
     if row.Actions is None:
         Actions = 'NIL'
     else:
         Actions = row.Actions
+        Actions = Actions.replace('&', 'and')
+        print "string & at Actions replaced: " + Actions
         
     if row.Status is None:
         Status = 'NIL'
@@ -265,7 +278,9 @@ def checkDatabase():
     global cursor
 
     #SQL = "SELECT WKLogMain.[WKAutoNo] FROM WKLogMain ORDER BY WKLogMain.[WKAutoNo] DESC"
-    SQL = "SELECT * FROM WKLogMain ORDER BY WKLogMain.[WKAutoNo] DESC"
+    #SQL = "SELECT * FROM WKLogMain ORDER BY WKAutoNo DESC"
+    SQL = "SELECT * FROM WKLogMain WHERE LogDate like '%2014%' ORDER BY WKAutoNo DESC;"
+    
     cursor.execute(SQL)
     row = cursor.fetchone()
     
