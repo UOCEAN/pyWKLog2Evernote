@@ -22,7 +22,17 @@ conn = pyodbc.connect(DBfile)
 
 cursor = conn.cursor()
 print "Database: " + DBfile + " connected."
+    
+now = datetime.datetime.now()
+print "Year: " + str(now.year)
 
+#SQL = "SELECT WKLogMain.[WKAutoNo] FROM WKLogMain ORDER BY WKLogMain.[WKAutoNo] DESC"
+#SQL = "SELECT * FROM WKLogMain WHERE LogDate like '%2014%' ORDER BY WKAutoNo DESC;"
+#SQL = "SELECT WKLogMain.[WKAutoNo] FROM WKLogMain ORDER BY WKLogMain.[WKAutoNo] DESC"
+#SQL = "SELECT * FROM WKLogMain ORDER BY WKAutoNo DESC"
+#SQL = "SELECT * FROM WKLogMain WHERE LogDate like '%2014%' ORDER BY WKAutoNo DESC;"    
+SQL = "SELECT * FROM WKLogMain WHERE LogDate like " + "'%" + str(now.year) + "%'" + "ORDER BY WKAutoNo DESC;"
+    
 #Global variable
 oldWKAutoNo = 0
 lastWKAutoNo = 0
@@ -191,7 +201,7 @@ def addNewNote(row):
     else:
         Symptoms = row.Symptoms
         Symptoms = Symptoms.replace('&', 'and')
-        print "string & at Symptoms replaced: " + Symptoms
+        print "Symptoms: " + Symptoms
     
         
     if row.Actions is None:
@@ -199,7 +209,7 @@ def addNewNote(row):
     else:
         Actions = row.Actions
         Actions = Actions.replace('&', 'and')
-        print "string & at Actions replaced: " + Actions
+        print "Actions: " + Actions
         
     if row.Status is None:
         Status = 'NIL'
@@ -262,7 +272,7 @@ def updateEvernote(row):
 def initDatabase():
     global oldWKAutoNo
     
-    SQL = "SELECT WKLogMain.[WKAutoNo] FROM WKLogMain ORDER BY WKLogMain.[WKAutoNo] DESC"
+    
     cursor.execute(SQL)
     row = cursor.fetchone()
     if row:
@@ -277,10 +287,6 @@ def checkDatabase():
     global lastWKAutoNo
     global cursor
 
-    #SQL = "SELECT WKLogMain.[WKAutoNo] FROM WKLogMain ORDER BY WKLogMain.[WKAutoNo] DESC"
-    #SQL = "SELECT * FROM WKLogMain ORDER BY WKAutoNo DESC"
-    SQL = "SELECT * FROM WKLogMain WHERE LogDate like '%2014%' ORDER BY WKAutoNo DESC;"
-    
     cursor.execute(SQL)
     row = cursor.fetchone()
     
