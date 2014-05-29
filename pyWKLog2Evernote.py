@@ -45,6 +45,7 @@ SQL = "SELECT * FROM WKLogMain WHERE LogDate like " + "'%" + str(now.year) + "%'
 oldWKAutoNo = 0
 lastWKAutoNo = 0
 svrListenPort = 5000
+elapseTime = 0
 
 # Real applications authenticate with Evernote using OAuth, but for the
 # purpose of exploring the API, you can get a developer token that allows
@@ -303,6 +304,7 @@ def initDatabase():
 def checkDatabase():
     global oldWKAutoNo
     global lastWKAutoNo
+    global elapseTime
     #global cursor
 
     try:
@@ -332,6 +334,7 @@ def checkDatabase():
         updateEvernote(row)
         oldWKAutoNo = lastWKAutoNo
         conn.close()
+        elapseTime = 0
         return -1
 
 
@@ -360,14 +363,17 @@ class MyFactory(protocol.Factory):
         self.numClients = 0 
         self.clients = []
         self.lc = task.LoopingCall(self.announce)
-        self.lc.start(3)
+        self.lc.start(1)
 
     def announce(self):
+        global elapseTime
         # 3 sec task to check database
         state = ""
         state = checkDatabase()
-        timenow =  "Time is now: " + str(datetime.datetime.now())
-        print timenow
+        elapseTime = elapseTime + 1
+        sys.stdout.write(str(elapseTime) + " ")
+        #timenow =  "Time is now: " + str(datetime.datetime.now())
+        #print timenow
         #sys.stdout.write(timenow)
         #print state
             
