@@ -18,10 +18,18 @@ import pyodbc
 DBfile = 'DSN=WKLOG'
 
 #conn = pyodbc.connect('DRIVER={Microsoft Access Driver (*.mdb)};DBQ='+DBfile)
-conn = pyodbc.connect(DBfile)
+#conn = pyodbc.connect(DBfile)
+try:
+    conn = pyodbc.connect(DBfile)
+except pyodbc.Error, err:
+    print "ODBC connection error: %s", err
+    quit()
 
 cursor = conn.cursor()
 print "Database: " + DBfile + " connected."
+conn.close()
+print "Database: " + DBfile + " closed."
+
     
 now = datetime.datetime.now()
 print "Year: " + str(now.year)
@@ -272,12 +280,22 @@ def updateEvernote(row):
 def initDatabase():
     global oldWKAutoNo
     
+    try:
+        conn = pyodbc.connect(DBfile)
+    except pyodbc.Error, err:
+        print "ODBC connection error: %s", err
+        return -1
+
+    cursor = conn.cursor()
+    #print "Database: " + DBfile + " connected."  
     
     cursor.execute(SQL)
     row = cursor.fetchone()
     if row:
         oldWKAutoNo = row.WKAutoNo
         print 'Found last WKAutoNo: %d' % oldWKAutoNo
+        conn.close()
+        return 0
         
         
    
@@ -285,7 +303,16 @@ def initDatabase():
 def checkDatabase():
     global oldWKAutoNo
     global lastWKAutoNo
-    global cursor
+    #global cursor
+
+    try:
+        conn = pyodbc.connect(DBfile)
+    except pyodbc.Error, err:
+        print "ODBC connection error: %s", err
+        return -1
+
+    cursor = conn.cursor()
+    #print "Database: " + DBfile + " connected."    
 
     cursor.execute(SQL)
     row = cursor.fetchone()
@@ -296,13 +323,15 @@ def checkDatabase():
         #print 'Found last WKAutoNo: %d' % lastWKAutoNo
         
     if lastWKAutoNo == oldWKAutoNo:
-        sys.stdout.write('.')
+        #sys.stdout.write('.')
         #print "lastWKAutoNo equal oldWKAutoNo, no need to update"
+        conn.close()
         return 0
     else:
         print "lastWKAutoNo Not equal oldWKAutoNo, update Evernote"
         updateEvernote(row)
         oldWKAutoNo = lastWKAutoNo
+        conn.close()
         return -1
 
 
@@ -334,9 +363,12 @@ class MyFactory(protocol.Factory):
         self.lc.start(3)
 
     def announce(self):
-        # 3 sec task to check HMI action
+        # 3 sec task to check database
         state = ""
         state = checkDatabase()
+        timenow =  "Time is now: " + str(datetime.datetime.now())
+        print timenow
+        #sys.stdout.write(timenow)
         #print state
             
     def clientConnectionMade(self, client):
