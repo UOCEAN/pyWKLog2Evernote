@@ -23,7 +23,7 @@ DBfile = 'DSN=WKLOG'
 try:
     conn = pyodbc.connect(DBfile)
     cursor = conn.cursor()
-    conn.close()
+    #conn.close()
     print "Database: " + DBfile + " connection is OK."
 except pyodbc.Error, err:
     print "ODBC connection error: %s", err
@@ -45,6 +45,7 @@ oldWKAutoNo = 0
 lastWKAutoNo = 0
 svrListenPort = 5000
 elapseTime = 0
+tryReconnect = 0
 
 # Real applications authenticate with Evernote using OAuth, but for the
 # purpose of exploring the API, you can get a developer token that allows
@@ -281,23 +282,35 @@ def initDatabase():
     global oldWKAutoNo
     
     try:
-        conn = pyodbc.connect(DBfile)
-        cursor = conn.cursor()
-        #print "Database: " + DBfile + " connected."  
-        
         cursor.execute(SQL)
         row = cursor.fetchone()
         if row:
             oldWKAutoNo = row.WKAutoNo
             print 'Found last WKAutoNo: %d' % oldWKAutoNo
-            conn.close()
             return 0
     except pyodbc.Error, err:
         print "ODBC connection error: %s", err
+        quit()
         return -1
 
 
-        
+
+# reconnect database
+def reconnect():
+    global conn
+    global cursor
+    global tryReconnect
+
+    try:
+        print
+        print "Try reconnect the Database"
+        conn = pyodbc.connect(DBfile)
+        cursor = conn.cursor()
+        tryReconnect = 0
+    except pyodbc.Error, err:
+        print
+        print "ODBC connection error: %s", err
+        tryReconnect = 1
         
    
 # check database
@@ -305,32 +318,43 @@ def checkDatabase():
     global oldWKAutoNo
     global lastWKAutoNo
     global elapseTime
+    global tryReconnect
 
     try:
-        conn = pyodbc.connect(DBfile)
-        cursor = conn.cursor()
         cursor.execute(SQL)
         row = cursor.fetchone()
         if row:
             lastWKAutoNo = row.WKAutoNo
-            #sys.stdout.write('.')
-            #print 'Found last WKAutoNo: %d' % lastWKAutoNo
+            NoRecordUpdate = lastWKAutoNo - oldWKAutoNo
             
-        if lastWKAutoNo == oldWKAutoNo:
-            #sys.stdout.write('.')
-            #print "lastWKAutoNo equal oldWKAutoNo, no need to update"
-            conn.close()
+        if (NoRecordUpdate == 0):
             return 0
         else:
-            print "lastWKAutoNo Not equal oldWKAutoNo, update Evernote"
-            updateEvernote(row)
+            print
+            print 'No of record to be updated: %d' % NoRecordUpdate
+            a = []
+            i = 1
+            while i <= NoRecordUpdate:
+                a.append(row)
+                print "Record: " + str(i) + " " + str(a[i-1].WKAutoNo)
+                row = cursor.fetchone()
+                i+=1
+
+            j = NoRecordUpdate
+            while j >= 1:
+                print "Update record: " + str(j) + " " + str(a[j-1].WKAutoNo)
+                updateEvernote(a[j-1])
+                j -=1
+        
             oldWKAutoNo = lastWKAutoNo
-            conn.close()
             elapseTime = 0
-            return -1
+            return 0
 
     except pyodbc.Error, err:
+        print
         print "ODBC connection error: %s", err
+        conn.close()
+        tryReconnect = 1
         return -1
 
 
@@ -359,19 +383,18 @@ class MyFactory(protocol.Factory):
         self.numClients = 0 
         self.clients = []
         self.lc = task.LoopingCall(self.announce)
-        self.lc.start(3)
+        self.lc.start(1)
 
     def announce(self):
         global elapseTime
-        # 3 sec task to check database
-        state = ""
-        state = checkDatabase()
-        elapseTime = elapseTime + 1
-        sys.stdout.write(str(elapseTime) + " ")
-        #timenow =  "Time is now: " + str(datetime.datetime.now())
-        #print timenow
-        #sys.stdout.write(timenow)
-        #print state
+        # 1 sec task to check database
+        if tryReconnect == 1:
+            reconnect()
+        else:
+            state = ""
+            state = checkDatabase()
+            elapseTime = elapseTime + 1
+            sys.stdout.write(str(elapseTime) + " ")
             
     def clientConnectionMade(self, client):
         self.clients.append(client)
