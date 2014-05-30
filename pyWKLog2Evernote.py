@@ -19,16 +19,15 @@ DBfile = 'DSN=WKLOG'
 
 #conn = pyodbc.connect('DRIVER={Microsoft Access Driver (*.mdb)};DBQ='+DBfile)
 #conn = pyodbc.connect(DBfile)
+#check database connection OK or not
 try:
     conn = pyodbc.connect(DBfile)
+    cursor = conn.cursor()
+    conn.close()
+    print "Database: " + DBfile + " connection is OK."
 except pyodbc.Error, err:
     print "ODBC connection error: %s", err
     quit()
-
-cursor = conn.cursor()
-print "Database: " + DBfile + " connected."
-conn.close()
-print "Database: " + DBfile + " closed."
 
     
 now = datetime.datetime.now()
@@ -107,27 +106,27 @@ def addNewNote(row):
     # for the attachment. At a minimum, the Resource contains the binary attachment
     # data, an MD5 hash of the binary data, and the attachment MIME type.
     # It can also include attributes such as filename and location.
-    image = open('enlogo.png', 'rb').read()
-    md5 = hashlib.md5()
-    md5.update(image)
-    hash = md5.digest()
+    #image = open('enlogo.png', 'rb').read()
+    #md5 = hashlib.md5()
+    #md5.update(image)
+    #hash = md5.digest()
 
-    data = Types.Data()
-    data.size = len(image)
-    data.bodyHash = hash
-    data.body = image
+    #data = Types.Data()
+    #data.size = len(image)
+    #data.bodyHash = hash
+    #data.body = image
 
-    resource = Types.Resource()
-    resource.mime = 'image/png'
-    resource.data = data
+    #resource = Types.Resource()
+    #resource.mime = 'image/png'
+    #resource.data = data
 
     # Now, add the new Resource to the note's list of resources
-    note.resources = [resource]
+    #note.resources = [resource]
 
     # To display the Resource as part of the note's content, include an <en-media>
     # tag in the note's ENML content. The en-media tag identifies the corresponding
     # Resource using the MD5 hash.
-    hash_hex = binascii.hexlify(hash)
+    #hash_hex = binascii.hexlify(hash)
 
     # check content of row is null
     if row.WKAutoNo is None:
@@ -283,20 +282,21 @@ def initDatabase():
     
     try:
         conn = pyodbc.connect(DBfile)
+        cursor = conn.cursor()
+        #print "Database: " + DBfile + " connected."  
+        
+        cursor.execute(SQL)
+        row = cursor.fetchone()
+        if row:
+            oldWKAutoNo = row.WKAutoNo
+            print 'Found last WKAutoNo: %d' % oldWKAutoNo
+            conn.close()
+            return 0
     except pyodbc.Error, err:
         print "ODBC connection error: %s", err
         return -1
 
-    cursor = conn.cursor()
-    #print "Database: " + DBfile + " connected."  
-    
-    cursor.execute(SQL)
-    row = cursor.fetchone()
-    if row:
-        oldWKAutoNo = row.WKAutoNo
-        print 'Found last WKAutoNo: %d' % oldWKAutoNo
-        conn.close()
-        return 0
+
         
         
    
@@ -305,36 +305,32 @@ def checkDatabase():
     global oldWKAutoNo
     global lastWKAutoNo
     global elapseTime
-    #global cursor
 
     try:
         conn = pyodbc.connect(DBfile)
+        cursor = conn.cursor()
+        cursor.execute(SQL)
+        row = cursor.fetchone()
+        if row:
+            lastWKAutoNo = row.WKAutoNo
+            #sys.stdout.write('.')
+            #print 'Found last WKAutoNo: %d' % lastWKAutoNo
+            
+        if lastWKAutoNo == oldWKAutoNo:
+            #sys.stdout.write('.')
+            #print "lastWKAutoNo equal oldWKAutoNo, no need to update"
+            conn.close()
+            return 0
+        else:
+            print "lastWKAutoNo Not equal oldWKAutoNo, update Evernote"
+            updateEvernote(row)
+            oldWKAutoNo = lastWKAutoNo
+            conn.close()
+            elapseTime = 0
+            return -1
+
     except pyodbc.Error, err:
         print "ODBC connection error: %s", err
-        return -1
-
-    cursor = conn.cursor()
-    #print "Database: " + DBfile + " connected."    
-
-    cursor.execute(SQL)
-    row = cursor.fetchone()
-    
-    if row:
-        lastWKAutoNo = row.WKAutoNo
-        #sys.stdout.write('.')
-        #print 'Found last WKAutoNo: %d' % lastWKAutoNo
-        
-    if lastWKAutoNo == oldWKAutoNo:
-        #sys.stdout.write('.')
-        #print "lastWKAutoNo equal oldWKAutoNo, no need to update"
-        conn.close()
-        return 0
-    else:
-        print "lastWKAutoNo Not equal oldWKAutoNo, update Evernote"
-        updateEvernote(row)
-        oldWKAutoNo = lastWKAutoNo
-        conn.close()
-        elapseTime = 0
         return -1
 
 
@@ -363,7 +359,7 @@ class MyFactory(protocol.Factory):
         self.numClients = 0 
         self.clients = []
         self.lc = task.LoopingCall(self.announce)
-        self.lc.start(1)
+        self.lc.start(3)
 
     def announce(self):
         global elapseTime
