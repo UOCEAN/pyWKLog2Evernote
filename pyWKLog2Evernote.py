@@ -46,6 +46,7 @@ lastWKAutoNo = 0
 svrListenPort = 5000
 elapseTime = 0
 tryReconnect = 0
+errorCount = 0
 
 # Real applications authenticate with Evernote using OAuth, but for the
 # purpose of exploring the API, you can get a developer token that allows
@@ -280,6 +281,7 @@ def updateEvernote(row):
 #init database while startup
 def initDatabase():
     global oldWKAutoNo
+    global errorCount
     
     try:
         cursor.execute(SQL)
@@ -290,6 +292,7 @@ def initDatabase():
             return 0
     except pyodbc.Error, err:
         print "ODBC connection error: %s", err
+        errorCount = errorCount + 1
         quit()
         return -1
 
@@ -300,6 +303,7 @@ def reconnect():
     global conn
     global cursor
     global tryReconnect
+    global errorCount
 
     try:
         print
@@ -307,9 +311,11 @@ def reconnect():
         conn = pyodbc.connect(DBfile)
         cursor = conn.cursor()
         tryReconnect = 0
+        errorCount = errorCount + 1
     except pyodbc.Error, err:
         print
         print "ODBC connection error: %s", err
+        errorCount = errorCount + 1
         tryReconnect = 1
         
    
@@ -325,6 +331,7 @@ def checkDatabase():
         row = cursor.fetchone()
         if row:
             lastWKAutoNo = row.WKAutoNo
+            print 'lastWKAutoNo: %d, errorCount: %d' % (lastWKAutoNo, errorCount)
             NoRecordUpdate = lastWKAutoNo - oldWKAutoNo
             
         if (NoRecordUpdate == 0):
@@ -383,17 +390,17 @@ class MyFactory(protocol.Factory):
         self.numClients = 0 
         self.clients = []
         self.lc = task.LoopingCall(self.announce)
-        self.lc.start(1)
+        self.lc.start(5)
 
     def announce(self):
         global elapseTime
-        # 1 sec task to check database
+        # 5 sec task to check database
         if tryReconnect == 1:
             reconnect()
         else:
             state = ""
             state = checkDatabase()
-            elapseTime = elapseTime + 1
+            elapseTime = elapseTime + 5
             sys.stdout.write(str(elapseTime) + " ")
             
     def clientConnectionMade(self, client):
