@@ -46,7 +46,8 @@ lastWKAutoNo = 0
 svrListenPort = 5000
 elapseTime = 0
 tryReconnect = 0
-errorCount = 0
+EverNoteErrorCount = 0
+dbErrorCount = 0
 
 # Real applications authenticate with Evernote using OAuth, but for the
 # purpose of exploring the API, you can get a developer token that allows
@@ -55,6 +56,7 @@ errorCount = 0
 #
 # add a new note into the Evernote Default Notebook
 def addNewNote(row):
+    global EverNoteErrorCount 
     # watchkeeper token
     auth_token = "S=s76:U=84f6ef:E=14d7e735e85:C=14626c23289:P=1cd:A=en-devtoken:V=2:H=0616ed9537e7d30bd8bdfe27749c43aa"
 
@@ -265,12 +267,20 @@ def addNewNote(row):
     # add tag info
     note.tagNames = [SubSys, Site, Cat]
     
+
+
     # Finally, send the new note to Evernote using the createNote method
     # The new Note object that is returned will contain server-generated
     # attributes such as the new note's unique GUID.
-    created_note = note_store.createNote(note)
 
-    print "Successfully created a new note with GUID: ", created_note.guid
+    try:
+        created_note = note_store.createNote(note)
+        print "Successfully created a new note with GUID: ", created_note.guid
+    except note_store.Error, err:
+        print "Create note error: %s", err
+        EverNoteErrorCount = EverNoteErrorCount + 1
+        return -1
+    
 
 # update Evernote
 def updateEvernote(row):
@@ -281,7 +291,7 @@ def updateEvernote(row):
 #init database while startup
 def initDatabase():
     global oldWKAutoNo
-    global errorCount
+    global dbErrorCount
     
     try:
         cursor.execute(SQL)
@@ -292,7 +302,7 @@ def initDatabase():
             return 0
     except pyodbc.Error, err:
         print "ODBC connection error: %s", err
-        errorCount = errorCount + 1
+        dbErrorCount = dbErrorCount + 1
         quit()
         return -1
 
@@ -303,7 +313,7 @@ def reconnect():
     global conn
     global cursor
     global tryReconnect
-    global errorCount
+    global dbErrorCount
 
     try:
         print
@@ -311,11 +321,11 @@ def reconnect():
         conn = pyodbc.connect(DBfile)
         cursor = conn.cursor()
         tryReconnect = 0
-        errorCount = errorCount + 1
+        dbErrorCount = dbErrorCount + 1
     except pyodbc.Error, err:
         print
         print "ODBC connection error: %s", err
-        errorCount = errorCount + 1
+        dbErrorCount = dbErrorCount + 1
         tryReconnect = 1
         
    
@@ -331,7 +341,8 @@ def checkDatabase():
         row = cursor.fetchone()
         if row:
             lastWKAutoNo = row.WKAutoNo
-            print 'lastWKAutoNo: %d, errorCount: %d' % (lastWKAutoNo, errorCount)
+            print 'lastWKAutoNo: %d, dbErrorCount: %d, EverNoteErrorCount: %d' % (lastWKAutoNo, dbErrorCount, EverNoteErrorCount)
+
             NoRecordUpdate = lastWKAutoNo - oldWKAutoNo
             
         if (NoRecordUpdate == 0):
