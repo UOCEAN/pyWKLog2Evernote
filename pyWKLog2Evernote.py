@@ -1,3 +1,7 @@
+# Python WKLog to Evernote
+# By: TCC
+# Date: 20140612
+#
 from twisted.internet import reactor, protocol, task
 import socket
 import sys
