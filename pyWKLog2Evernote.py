@@ -93,17 +93,24 @@ def addNewNote(row):
     if not version_ok:
         exit(1)
 
-    note_store = client.get_note_store()
+    try:
+        note_store = client.get_note_store()
 
-    # List all of the notebooks in the user's account
-    notebooks = note_store.listNotebooks()
-    print "Found ", len(notebooks), " notebooks:"
-    for notebook in notebooks:
-        print "  * ", notebook.name
+        # List all of the notebooks in the user's account
+        notebooks = note_store.listNotebooks()
+        print "Found ", len(notebooks), " notebooks:"
+        for notebook in notebooks:
+            print "  * ", notebook.name
 
-    print
-    print "Creating a new note in the default notebook"
-    print
+        print
+        print "Creating a new note in the default notebook"
+        print
+
+    except note_store.Error, err:
+        print "Get note store error: %s", err
+        EverNoteErrorCount = EverNoteErrorCount + 1
+        return -1
+   
 
     # To create a new note, simply create a new Note object and fill in
     # attributes such as the note's title.
