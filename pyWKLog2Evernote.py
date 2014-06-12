@@ -342,9 +342,8 @@ def checkDatabase():
         row = cursor.fetchone()
         if row:
             lastWKAutoNo = row.WKAutoNo
-
-            print 'lastWKAutoNo: %d, dbErrorCount: %d, EverNoteErrorCount: %d' % (lastWKAutoNo, dbErrorCount, EverNoteErrorCount)
-
+            # don't print the dbase info
+            # print 'lastWKAutoNo: %d, dbErrorCount: %d, EverNoteErrorCount: %d' % (lastWKAutoNo, dbErrorCount, EverNoteErrorCount)
             NoRecordUpdate = lastWKAutoNo - oldWKAutoNo
             
         if (NoRecordUpdate == 0):
