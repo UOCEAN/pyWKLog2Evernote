@@ -20,11 +20,14 @@ import pyodbc
 #database define
 #DBfile = 'C:\pyWKLog2Evernote\msudbAS.mdb'
 #DBfile = 'W:\MSUDBASE\WKLog3a\msudbAS.mdb'
-DBfile = 'DSN=WKLOG'
-
 #conn = pyodbc.connect('DRIVER={Microsoft Access Driver (*.mdb)};DBQ='+DBfile)
 #conn = pyodbc.connect(DBfile)
 #check database connection OK or not
+#
+DBfile = 'DSN=WKLOG'
+#DBfile = 'DSN=WKLogDev'
+
+
 try:
     conn = pyodbc.connect(DBfile)
     cursor = conn.cursor()
@@ -53,6 +56,25 @@ elapseTime = 0
 tryReconnect = 0
 EverNoteErrorCount = 0
 dbErrorCount = 0
+
+#read lastAutoNo
+try:
+    file = open('lastAutoNo.txt','r')
+    oldWKAutoNo  = int(file.read())
+    print 'Old WKAutoNo: %s' % str(oldWKAutoNo)
+    file.close()
+except IOError:
+    print "file read error"
+    quit()
+
+def writeLastAutoNo(autoNo):
+    try:
+        file = open('lastAutoNo.txt','w')
+        file.write(str(autoNo))
+        file.close()
+    except IOError:
+        print "file write error"
+
 
 # Real applications authenticate with Evernote using OAuth, but for the
 # purpose of exploring the API, you can get a developer token that allows
@@ -88,9 +110,10 @@ def addNewNote(row):
         UserStoreConstants.EDAM_VERSION_MAJOR,
         UserStoreConstants.EDAM_VERSION_MINOR
     )
-    print "Is my Evernote API version up to date? ", str(version_ok)
-    print ""
+    #print "Is my Evernote API version up to date? ", str(version_ok)
+    #print ""
     if not version_ok:
+        print "My Evernote API version not up to date. ****"
         exit(1)
 
     try:
@@ -98,13 +121,22 @@ def addNewNote(row):
 
         # List all of the notebooks in the user's account
         notebooks = note_store.listNotebooks()
-        print "Found ", len(notebooks), " notebooks:"
+        #print "Found ", len(notebooks), " notebooks:"
+        notebookFound = False
         for notebook in notebooks:
-            print "  * ", notebook.name
+            #print "  * ", notebook.name
+            if (notebook.name == "S01.MSU.WKLog"):
+                #print "found WKLog Notebook"
+                note = Types.Note()
+                note.notebookGuid = notebook.guid
+                notebookFound = True
 
-        print
-        print "Creating a new note in the default notebook"
-        print
+        if (notebookFound != True):
+            print "**** Share notebook not found ****"
+            quit()
+            
+        print "--- Creating a new note in the notebook: S01.MSU.WKLog --"
+        
 
     except note_store.Error, err:
         print "Get note store error: %s", err
@@ -114,46 +146,21 @@ def addNewNote(row):
 
     # To create a new note, simply create a new Note object and fill in
     # attributes such as the note's title.
-    note = Types.Note()
-    #note.title = "Test note from pyWKLog2Evernote.py"
+    # note = Types.Note()
     note.title = row.WKRefNo
-
-    # To include an attachment such as an image in a note, first create a Resource
-    # for the attachment. At a minimum, the Resource contains the binary attachment
-    # data, an MD5 hash of the binary data, and the attachment MIME type.
-    # It can also include attributes such as filename and location.
-    #image = open('enlogo.png', 'rb').read()
-    #md5 = hashlib.md5()
-    #md5.update(image)
-    #hash = md5.digest()
-
-    #data = Types.Data()
-    #data.size = len(image)
-    #data.bodyHash = hash
-    #data.body = image
-
-    #resource = Types.Resource()
-    #resource.mime = 'image/png'
-    #resource.data = data
-
-    # Now, add the new Resource to the note's list of resources
-    #note.resources = [resource]
-
-    # To display the Resource as part of the note's content, include an <en-media>
-    # tag in the note's ENML content. The en-media tag identifies the corresponding
-    # Resource using the MD5 hash.
-    #hash_hex = binascii.hexlify(hash)
 
     # check content of row is null
     if row.WKAutoNo is None:
         #error
         print "*** WKAutoNo Error ***"
         return
+
     if row.WKRefNo is None:
         #error
         print "*** WKRefNo Error ***"
-        return
-    
+    else:
+        print 'WKRefNo: %s' % row.WKRefNo
+        
     if row.LogDate is None:
         LogDate = 'NIL'
     else:
@@ -208,16 +215,19 @@ def addNewNote(row):
         Cat = 'NIL'
     else:
         Cat = row.Cat
+        print "CAT: " + Cat
         
     if row.Site is None:
         Site = 'NIL'
     else:
         Site = row.Site
+        print "Site: " + Site
         
     if row.SubSys is None:
         SubSys = 'NIL'
     else:
         SubSys = row.SubSys
+        print "Subsys: " + SubSys
 
     # check special char & and replace    
     if row.Symptoms is None:
@@ -279,15 +289,14 @@ def addNewNote(row):
     # add tag info
     note.tagNames = [SubSys, Site, Cat]
     
-
-
     # Finally, send the new note to Evernote using the createNote method
     # The new Note object that is returned will contain server-generated
     # attributes such as the new note's unique GUID.
 
     try:
         created_note = note_store.createNote(note)
-        print "Successfully created a new note with GUID: ", created_note.guid
+        print "--- Successfully created a new note ---"
+        print
     except note_store.Error, err:
         print "Create note error: %s", err
         EverNoteErrorCount = EverNoteErrorCount + 1
@@ -296,7 +305,7 @@ def addNewNote(row):
 
 # update Evernote
 def updateEvernote(row):
-    print row.WKAutoNo, row.WKRefNo
+    print 'Create note: %s %s' % (str(row.WKAutoNo), row.WKRefNo)
     addNewNote(row)
     
 
@@ -304,7 +313,8 @@ def updateEvernote(row):
 def initDatabase():
     global oldWKAutoNo
     global dbErrorCount
-    
+
+    return 0
     try:
         cursor.execute(SQL)
         row = cursor.fetchone()
@@ -372,11 +382,15 @@ def checkDatabase():
 
             j = NoRecordUpdate
             while j >= 1:
-                print "Update record: " + str(j) + " " + str(a[j-1].WKAutoNo)
+                # print "Update record: " + str(j) + " " + str(a[j-1].WKAutoNo)
                 updateEvernote(a[j-1])
                 j -=1
         
             oldWKAutoNo = lastWKAutoNo
+
+            #update to file
+            writeLastAutoNo(lastWKAutoNo)
+            
             elapseTime = 0
             return 0
 
