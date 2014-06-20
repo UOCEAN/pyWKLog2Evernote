@@ -269,6 +269,8 @@ def addNewNote(row):
     note.content += '<!DOCTYPE en-note SYSTEM ' \
         '"http://xml.evernote.com/pub/enml2.dtd">'
     note.content += '<en-note>'
+    note.content += '<span style="font-weight:bold;color:black;">' + 'Symptoms: ' + '</span>'  + Symptoms + '<br/>'
+    note.content += '<span style="font-weight:bold;color:black;">' + 'Actions: ' + '</span>'  + Actions + '<br/>'
     note.content += '<span style="font-weight:bold;color:black;">' + 'WKAutoNo: ' + '</span>' + str(row.WKAutoNo) + '<br/>'
     note.content += '<span style="font-weight:bold;color:black;">' + 'WKRefNo: ' + '</span>' + row.WKRefNo + '<br/>'
     note.content += '<span style="font-weight:bold;color:black;">' + 'LogDateTime: ' + '</span>' + LogDate + ' ' + LogTime + '<br/>'
@@ -281,8 +283,8 @@ def addNewNote(row):
     note.content += '<span style="font-weight:bold;color:black;">' + 'Site: ' + '</span>'  + Site + '<br/>'
     note.content += '<span style="font-weight:bold;color:black;">' + 'SubSys: ' + '</span>'  + SubSys + '<br/>'
     note.content += '<span style="font-weight:bold;color:black;">' + 'Symptoms: ' + '</span>'  + Symptoms + '<br/>'
-    note.content += '<span style="font-weight:bold;color:black;">' + 'Actions: ' + '</span>'  + Actions + '<br/>'
-    note.content += '<span style="font-weight:bold;color:black;">' + 'Status: ' + '</span>'  + Status + '<br/>'
+    #note.content += '<span style="font-weight:bold;color:black;">' + 'Actions: ' + '</span>'  + Actions + '<br/>'
+    #note.content += '<span style="font-weight:bold;color:black;">' + 'Status: ' + '</span>'  + Status + '<br/>'
     note.content += '<span style="font-weight:bold;color:black;">' + 'RefTo: ' + '</span>'  + RefTo + '<br/>'
     note.content += '</en-note>'
 
