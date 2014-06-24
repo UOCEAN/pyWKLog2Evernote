@@ -27,7 +27,6 @@ import pyodbc
 DBfile = 'DSN=WKLOG'
 #DBfile = 'DSN=WKLogDev'
 
-
 try:
     conn = pyodbc.connect(DBfile)
     cursor = conn.cursor()
@@ -103,18 +102,28 @@ def addNewNote(row):
     #client = EvernoteClient(token=auth_token, sandbox=True)
     client = EvernoteClient(token=auth_token, sandbox=False)
 
-    user_store = client.get_user_store()
+    try:
+        user_store = client.get_user_store()
+        print "Get user store OK"
+    except user_store.Error:
+        print "Get user store error"
+        return -1
+    
 
-    version_ok = user_store.checkVersion(
-        "Evernote EDAMTest (Python)",
-        UserStoreConstants.EDAM_VERSION_MAJOR,
-        UserStoreConstants.EDAM_VERSION_MINOR
-    )
-    #print "Is my Evernote API version up to date? ", str(version_ok)
-    #print ""
-    if not version_ok:
-        print "My Evernote API version not up to date. ****"
-        exit(1)
+    try:
+        version_ok = user_store.checkVersion(
+            "Evernote EDAMTest (Python)",
+            UserStoreConstants.EDAM_VERSION_MAJOR,
+            UserStoreConstants.EDAM_VERSION_MINOR
+        )
+        print "Evernote API version up to date: ", str(version_ok)
+        if not version_ok:
+            print "My Evernote API version not up to date. ****"
+            exit(1)
+    except user_store.Error:
+        print "Get Evernote API version error"
+        return -1
+    
 
     try:
         note_store = client.get_note_store()
@@ -149,6 +158,7 @@ def addNewNote(row):
     # note = Types.Note()
     note.title = row.WKRefNo
 
+    print str(datetime.datetime.now())
     # check content of row is null
     if row.WKAutoNo is None:
         #error
@@ -221,13 +231,21 @@ def addNewNote(row):
         Site = 'NIL'
     else:
         Site = row.Site
-        print "Site: " + Site
-        
+        if len(row.Site) < 3:
+            Site = 'NIL'
+            print "Site(<3): " + Site
+        else:
+            print "Site: " + Site
+            
     if row.SubSys is None:
         SubSys = 'NIL'
     else:
         SubSys = row.SubSys
-        print "Subsys: " + SubSys
+        if len(SubSys) < 3:
+            SubSys = 'NIL'
+            print "SubSys(<3): " + SubSys
+        else:
+            print "Subsys: " + SubSys
 
     # check special char & and replace    
     if row.Symptoms is None:
@@ -439,8 +457,6 @@ class MyFactory(protocol.Factory):
             state = ""
             state = checkDatabase()
             elapseTime = elapseTime + 10
-            
-            #sys.stdout.write(str(elapseTime) + " ")
             sys.stdout.write('%s\r' % str(elapseTime))
             sys.stdout.flush()
                              
