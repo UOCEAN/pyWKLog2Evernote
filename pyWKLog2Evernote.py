@@ -11,6 +11,10 @@ import hashlib
 import binascii
 import evernote.edam.userstore.constants as UserStoreConstants
 import evernote.edam.type.ttypes as Types
+import ConfigParser
+import getopt
+import os
+import twitter
 
 
 from evernote.api.client import EvernoteClient
@@ -74,6 +78,27 @@ def writeLastAutoNo(autoNo):
     except IOError:
         print "file write error"
 
+
+def postWKtwitter(message):
+# post to @watchkeepermsu twitter accout
+    consumer_key = "Q7jnd3bEgpU5XpnNFe6mjgd40"
+    consumer_secret = "ynGFu9ItIR9pbeaA8dkcU497Oy3gCSHi8jpNhaMjByuQQ8jbfZ"
+    access_key = "555820995-Tt2wVRBGA6KPTkFFbnMIiAkE4OacPPZllrX5Qc3q"
+    access_secret = "2ghQuTpg0Av6kKzHn4my8hIxghkL2TDFyZphQYnGURyu8"
+    encoding = None
+
+    api = twitter.Api(consumer_key=consumer_key, consumer_secret=consumer_secret,
+                    access_token_key=access_key, access_token_secret=access_secret,
+                    input_encoding=encoding)
+
+    try:
+        status = api.PostUpdate(message)
+    except UnicodeDecodeError:
+        print "Your message could not be encoded.  Perhaps it contains non-ASCII characters? "
+        print "Try explicitly specifying the encoding with the --encoding flag"
+        sys.exit(2)
+    print "%s just posted: %s" % (status.user.name, status.text) 
+  
 
 # Real applications authenticate with Evernote using OAuth, but for the
 # purpose of exploring the API, you can get a developer token that allows
@@ -145,7 +170,6 @@ def addNewNote(row):
             quit()
             
         print "--- Creating a new note in the notebook: S01.MSU.WKLog --"
-        
 
     except note_store.Error, err:
         print "Get note store error: %s", err
@@ -317,6 +341,8 @@ def addNewNote(row):
         created_note = note_store.createNote(note)
         print "--- Successfully created a new note ---"
         print
+        postWKtwitter(row.WKRefNo)
+        
     except note_store.Error, err:
         print "Create note error: %s", err
         EverNoteErrorCount = EverNoteErrorCount + 1
