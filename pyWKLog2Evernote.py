@@ -59,6 +59,11 @@ elapseTime = 0
 tryReconnect = 0
 EverNoteErrorCount = 0
 dbErrorCount = 0
+consumer_key = ""
+consumer_secret = ""
+access_key = ""
+access_secret = ""
+auth_token = ""
 
 #read lastAutoNo
 try:
@@ -70,6 +75,48 @@ except IOError:
     print "file read error"
     quit()
 
+def readTokenFile():
+    global consumer_key
+    global consumer_secret
+    global access_key
+    global access_secret
+    global auth_token
+    
+    try:
+        file = open('token.txt','r')
+        some_list = file.readlines()
+        matching = [s for s in some_list if "consumer_key" in s]
+        consumer_key = str(matching[0]).replace('\n','')
+        consumer_key = consumer_key.replace('consumer_key ','')
+        print 'Twitter consumer_key: %s' % consumer_key
+
+        matching = [s for s in some_list if "consumer_secret" in s]
+        consumer_secret = str(matching[0]).replace('\n','')
+        consumer_secret = consumer_secret.replace('consumer_secret ','')
+        print 'Twitter consumer_secret: %s' % consumer_secret
+
+        matching = [s for s in some_list if "access_key" in s]
+        access_key = str(matching[0]).replace('\n','')
+        access_key = access_key.replace('access_key ','')
+        print 'Twitter access_key: %s' % access_key
+
+        matching = [s for s in some_list if "access_secret" in s]
+        access_secret = str(matching[0]).replace('\n','')
+        access_secret = access_secret.replace('access_secret ','')
+        print 'Twitter access_secret: %s' % access_secret
+
+        matching = [s for s in some_list if "auth_token" in s]
+        auth_token = str(matching[0]).replace('\n','')
+        auth_token = auth_token.replace('auth_token ','')
+        print 'Evernote auth_token: %s' % auth_token
+
+        file.close()
+        
+    except IOError:
+        print '***Token file not exist***'
+        quit()
+
+                    
 def writeLastAutoNo(autoNo):
     try:
         file = open('lastAutoNo.txt','w')
@@ -81,10 +128,6 @@ def writeLastAutoNo(autoNo):
 
 def postWKtwitter(message):
 # post to @watchkeepermsu twitter accout
-    consumer_key = "Q7jnd3bEgpU5XpnNFe6mjgd40"
-    consumer_secret = "ynGFu9ItIR9pbeaA8dkcU497Oy3gCSHi8jpNhaMjByuQQ8jbfZ"
-    access_key = "555820995-Tt2wVRBGA6KPTkFFbnMIiAkE4OacPPZllrX5Qc3q"
-    access_secret = "2ghQuTpg0Av6kKzHn4my8hIxghkL2TDFyZphQYnGURyu8"
     encoding = None
 
     api = twitter.Api(consumer_key=consumer_key, consumer_secret=consumer_secret,
@@ -97,7 +140,7 @@ def postWKtwitter(message):
         print "Your message could not be encoded.  Perhaps it contains non-ASCII characters? "
         print "Try explicitly specifying the encoding with the --encoding flag"
         sys.exit(2)
-    print "%s just posted: %s" % (status.user.name, status.text) 
+    print "%s just tweet %s" % (status.user.name, status.text) 
   
 
 # Real applications authenticate with Evernote using OAuth, but for the
@@ -108,11 +151,6 @@ def postWKtwitter(message):
 # add a new note into the Evernote Default Notebook
 def addNewNote(row):
     global EverNoteErrorCount 
-    # watchkeeper token
-    auth_token = "S=s76:U=84f6ef:E=14d7e735e85:C=14626c23289:P=1cd:A=en-devtoken:V=2:H=0616ed9537e7d30bd8bdfe27749c43aa"
-
-    # tongcc8 token
-    # auth_token = "S=s2:U=151bd:E=14d7f6cc0c6:C=14627bb94cd:P=1cd:A=en-devtoken:V=2:H=605e2dd576a2610d0888587b051389af"
 
     if auth_token == "your developer token":
         print "Please fill in your developer token"
@@ -171,7 +209,7 @@ def addNewNote(row):
             
         print "--- Creating a new note in the notebook: S01.MSU.WKLog --"
 
-    except note_store.Error, err:
+    except:
         print "Get note store error: %s", err
         EverNoteErrorCount = EverNoteErrorCount + 1
         return -1
@@ -277,6 +315,7 @@ def addNewNote(row):
     else:
         Symptoms = row.Symptoms
         Symptoms = Symptoms.replace('&', 'and')
+        tweetSymptoms = Symptoms[:120]
         print "Symptoms: " + Symptoms
     
         
@@ -340,8 +379,11 @@ def addNewNote(row):
     try:
         created_note = note_store.createNote(note)
         print "--- Successfully created a new note ---"
+        print "###                                 ###"
+        postWKtwitter(row.WKRefNo + ": " + tweetSymptoms)
+        print "###                                 ###"
         print
-        postWKtwitter(row.WKRefNo)
+        return 0
         
     except note_store.Error, err:
         print "Create note error: %s", err
@@ -352,7 +394,7 @@ def addNewNote(row):
 # update Evernote
 def updateEvernote(row):
     print 'Create note: %s %s' % (str(row.WKAutoNo), row.WKRefNo)
-    addNewNote(row)
+    return addNewNote(row)
     
 
 #init database while startup
@@ -429,7 +471,9 @@ def checkDatabase():
             j = NoRecordUpdate
             while j >= 1:
                 # print "Update record: " + str(j) + " " + str(a[j-1].WKAutoNo)
-                updateEvernote(a[j-1])
+                state = updateEvernote(a[j-1])
+                if (state <0):
+                    return -1
                 j -=1
         
             oldWKAutoNo = lastWKAutoNo
@@ -483,7 +527,8 @@ class MyFactory(protocol.Factory):
             state = ""
             state = checkDatabase()
             elapseTime = elapseTime + 10
-            sys.stdout.write('%s\r' % str(elapseTime))
+            sys.stdout.write('ElapseTime: %ssec, dbErrorCount: %s, EverNoteErrorCount: %s\r'
+                             % (str(elapseTime), str(dbErrorCount), str(EverNoteErrorCount)))
             sys.stdout.flush()
                              
     def clientConnectionMade(self, client):
@@ -500,7 +545,7 @@ class MyFactory(protocol.Factory):
 print 'WKLog to Evernote started'
 print 'My IP Address: ', socket.gethostbyname(socket.gethostname())
 print 'I am listening on port: ', svrListenPort
-
+readTokenFile()
 initDatabase()
 myfactory = MyFactory()
 reactor.listenTCP(svrListenPort, myfactory)
