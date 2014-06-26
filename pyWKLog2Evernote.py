@@ -379,9 +379,9 @@ def addNewNote(row):
     try:
         created_note = note_store.createNote(note)
         print "--- Successfully created a new note ---"
-        print "###                                 ###"
+        print "#######################################"
         postWKtwitter(row.WKRefNo + ": " + tweetSymptoms)
-        print "###                                 ###"
+        print "#######################################"
         print
         return 0
         
