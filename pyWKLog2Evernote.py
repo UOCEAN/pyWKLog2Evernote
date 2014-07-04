@@ -313,6 +313,7 @@ def addNewNote(row):
     # check special char & and replace    
     if row.Symptoms is None:
         Symptoms = 'NIL'
+        tweetSymptoms = 'NIL'
     else:
         Symptoms = row.Symptoms
         Symptoms = Symptoms.replace('&', 'and')
@@ -322,6 +323,7 @@ def addNewNote(row):
         
     if row.Actions is None:
         Actions = 'NIL'
+        tweetActions = 'NIL'
     else:
         Actions = row.Actions
         Actions = Actions.replace('&', 'and')
@@ -383,7 +385,8 @@ def addNewNote(row):
         print "--- Successfully created a new note ---"
         print "#######################################"
         postWKtwitter(tweetWKRefNo + ':' + Site + ',' + SubSys + ',' +  tweetSymptoms)
-        postWKtwitter(tweetWKRefNo + ':' + tweetActions)
+        if (tweetActions != 'NIL'):
+            postWKtwitter(tweetWKRefNo + ':' + tweetActions)
         print "#######################################"
         print
         return 0
