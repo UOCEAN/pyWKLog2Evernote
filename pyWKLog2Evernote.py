@@ -232,6 +232,7 @@ def addNewNote(row):
         print "*** WKRefNo Error ***"
     else:
         print 'WKRefNo: %s' % row.WKRefNo
+        tweetWKRefNo = row.WKRefNo.replace('2014220','~')
         
     if row.LogDate is None:
         LogDate = 'NIL'
@@ -380,7 +381,7 @@ def addNewNote(row):
         created_note = note_store.createNote(note)
         print "--- Successfully created a new note ---"
         print "#######################################"
-        postWKtwitter(row.WKRefNo + ": " + tweetSymptoms)
+        postWKtwitter(tweetWKRefNo + ': ' + Site + ',' + SubSys + ',' +  tweetSymptoms)
         print "#######################################"
         print
         return 0

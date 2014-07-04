@@ -1,0 +1,8 @@
+Twitter
+consumer_key Gy5EFegeeTVHeadXbvQV91pAD
+consumer_secret zy2LJx1vxdw2vpTRmCb0t0KzRW9sTQx1mNfXznRcNicaaphEWF
+access_key 555820995-kGH8dvwwx4dpe2gOfGh0Havb4WqVktzF8C9J8ICt
+access_secret wXtbH72I1rDrjCWDDSC1qqJGenoLKnTDYappkzlDihOuh
+
+Evernote
+auth_token S=s76:U=84f6ef:E=14e388997b6:C=146e0d86ad0:P=1cd:A=en-devtoken:V=2:H=a37c46981417d65c767ef16900478a69
