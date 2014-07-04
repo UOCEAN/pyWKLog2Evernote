@@ -1,6 +1,6 @@
 # Python WKLog to Evernote
 # By: TCC
-# Date: 20140612
+# Date: 20140612, 20140704
 #
 from twisted.internet import reactor, protocol, task
 import socket
@@ -316,7 +316,7 @@ def addNewNote(row):
     else:
         Symptoms = row.Symptoms
         Symptoms = Symptoms.replace('&', 'and')
-        tweetSymptoms = Symptoms[:120]
+        tweetSymptoms = Symptoms[:126]
         print "Symptoms: " + Symptoms
     
         
@@ -325,6 +325,7 @@ def addNewNote(row):
     else:
         Actions = row.Actions
         Actions = Actions.replace('&', 'and')
+        tweetActions = Actions[:134]
         print "Actions: " + Actions
         
     if row.Status is None:
@@ -381,7 +382,8 @@ def addNewNote(row):
         created_note = note_store.createNote(note)
         print "--- Successfully created a new note ---"
         print "#######################################"
-        postWKtwitter(tweetWKRefNo + ': ' + Site + ',' + SubSys + ',' +  tweetSymptoms)
+        postWKtwitter(tweetWKRefNo + ':' + Site + ',' + SubSys + ',' +  tweetSymptoms)
+        postWKtwitter(tweetWKRefNo + ':' + tweetActions)
         print "#######################################"
         print
         return 0
