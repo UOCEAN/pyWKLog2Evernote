@@ -210,7 +210,7 @@ def addNewNote(row):
         print "--- Creating a new note in the notebook: S01.MSU.WKLog --"
 
     except:
-        print "Get note store error: %s", err
+        print "Get note store error"
         EverNoteErrorCount = EverNoteErrorCount + 1
         return -1
    
@@ -391,8 +391,8 @@ def addNewNote(row):
         print
         return 0
         
-    except note_store.Error, err:
-        print "Create note error: %s", err
+    except note_store.Error:
+        print "Create note error"
         EverNoteErrorCount = EverNoteErrorCount + 1
         return -1
     
@@ -490,9 +490,9 @@ def checkDatabase():
             elapseTime = 0
             return 0
 
-    except pyodbc.Error, err:
+    except pyodbc.Error:
         print
-        print "ODBC connection error: %s", err
+        print "ODBC connection error"
         conn.close()
         tryReconnect = 1
         return -1
@@ -530,11 +530,10 @@ class MyFactory(protocol.Factory):
         if tryReconnect == 1:
             reconnect()
         else:
-            state = ""
             state = checkDatabase()
             elapseTime = elapseTime + 10
-            sys.stdout.write('ElapseTime: %ssec, dbErrorCount: %s, EverNoteErrorCount: %s\r'
-                             % (str(elapseTime), str(dbErrorCount), str(EverNoteErrorCount)))
+            sys.stdout.write('state: %s, ElapseTime: %ssec, dbErrorCount: %s, EverNoteErrorCount: %s\r'
+                             % (str(state), str(elapseTime), str(dbErrorCount), str(EverNoteErrorCount)))
             sys.stdout.flush()
                              
     def clientConnectionMade(self, client):
