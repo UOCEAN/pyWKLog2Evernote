@@ -54,7 +54,7 @@ SQL = "SELECT * FROM WKLogMain WHERE LogDate like " + "'%" + str(now.year) + "%'
 #Global variable
 oldWKAutoNo = 0
 lastWKAutoNo = 0
-svrListenPort = 5000
+svrListenPort = 5002
 elapseTime = 0
 tryReconnect = 0
 EverNoteErrorCount = 0
@@ -317,9 +317,16 @@ def addNewNote(row):
     else:
         Symptoms = row.Symptoms
         Symptoms = Symptoms.replace('&', 'and')
-        tweetSymptoms = Symptoms[:126]
+        tweetSymptoms = Symptoms[:125]
         print "Symptoms: " + Symptoms
-    
+
+        if (len(Symptoms) > 122):
+            tweetSymList1, tweetSymList2 = Symptoms[:122], Symptoms[122:]
+            tweetSymList2 = tweetSymList2[:130]
+        else:
+            tweetSymList1 = Symptoms
+            tweetSymList2 = 'NIL'
+        
         
     if row.Actions is None:
         Actions = 'NIL'
@@ -327,9 +334,16 @@ def addNewNote(row):
     else:
         Actions = row.Actions
         Actions = Actions.replace('&', 'and')
-        tweetActions = Actions[:134]
+        tweetActions = Actions[:125]
         print "Actions: " + Actions
-        
+
+        if (len(Actions) > 130):
+            tweetActList1, tweetActList2 = Actions[:130], Actions[130:]
+            tweetActList2 = tweetActList2[:125]
+        else:
+            tweetActList1 = Actions
+            tweetActList2 = 'NIL'
+
     if row.Status is None:
         Status = 'NIL'
     else:
@@ -341,15 +355,6 @@ def addNewNote(row):
         RefTo = row.RefTo
            
 
-    # The content of an Evernote note is represented using Evernote Markup Language
-    # (ENML). The full ENML specification can be found in the Evernote API Overview
-    # at http://dev.evernote.com/documentation/cloud/chapters/ENML.php
-    #note.content = '<?xml version="1.0" encoding="UTF-8"?>'
-    #note.content += '<!DOCTYPE en-note SYSTEM ' \
-    #    '"http://xml.evernote.com/pub/enml2.dtd">'
-    #note.content += '<en-note>Here is the Evernote logo:<br/>'
-    #note.content += '<en-media type="image/png" hash="' + hash_hex + '"/>'
-    #note.content += '</en-note>'
     note.content = '<?xml version="1.0" encoding="UTF-8"?>'
     note.content += '<!DOCTYPE en-note SYSTEM ' \
         '"http://xml.evernote.com/pub/enml2.dtd">'
@@ -384,9 +389,15 @@ def addNewNote(row):
         created_note = note_store.createNote(note)
         print "--- Successfully created a new note ---"
         print "#######################################"
-        postWKtwitter(tweetWKRefNo + ':' + Site + ',' + SubSys + ',' +  tweetSymptoms)
+        postWKtwitter(tweetWKRefNo + ':' + Site + ',' + SubSys + ',SYM>' +  tweetSymList1)
+        if (tweetSymList2 != 'NIL'):
+            postWKtwitter(tweetWKRefNo + ':' + 'SYM>' + tweetSymList2)
+        
         if (tweetActions != 'NIL'):
-            postWKtwitter(tweetWKRefNo + ':' + tweetActions)
+            postWKtwitter(tweetWKRefNo + ':ACT>' + tweetActList1)
+            if (tweetActList2 != 'NIL'):
+                postWKtwitter(tweetWKRefNo + ':ACT>' + tweetActList2) 
+
         print "#######################################"
         print
         return 0
